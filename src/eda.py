@@ -30,6 +30,30 @@ for i in range(8, 15):
     sns.histplot(x=mat.columns[i], data=mat, ax=axes[j // 4, j % 4])
     axes[j // 4, j % 4].set_title(mat.columns[i])
 
-
+# %% [markdown]
+# # Portugese
 
 # %%
+por = pd.read_csv('../data/student-por.csv', sep=';', usecols=list(range(15, 30)))
+print(por.shape)
+por.head()
+
+# %%
+por.info()
+
+# %%
+# Binary variables
+fig, axes = plt.subplots(2, 4, figsize=(20, 10))
+for i in range(8):
+    sns.histplot(x=por.columns[i], data=por, ax=axes[i // 4, i % 4])
+    axes[i // 4, i % 4].set_title(por.columns[i])
+
+# %%
+# Categorical variables
+fig, axes = plt.subplots(2, 4, figsize=(20, 10))
+for i in range(8, 15):
+    j = i - 8
+    sns.histplot(x=por.columns[i], data=por, ax=axes[j // 4, j % 4])
+    axes[j // 4, j % 4].set_title(por.columns[i])
+
+
