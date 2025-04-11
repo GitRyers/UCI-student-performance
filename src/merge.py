@@ -53,7 +53,7 @@ def main():
     merged_df = merge_dataframes(df1, df2)
 
     # Save the merged dataframe
-    save_dataframe(merged_df, './data/merged.csv')
+    save_dataframe(merged_df, './data/student-merged.csv')
     
     
 if __name__ == "__main__":
