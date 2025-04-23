@@ -1,116 +1,88 @@
 # %%
 import pandas as pd
 
-math_df = pd.read_csv("/Users/choijunyeol/Desktop/JHU spring 2025/Gateway_Data_Science/UCI-student-performance/data/student-mat.csv", sep=';')
-por_df = pd.read_csv("/Users/choijunyeol/Desktop/JHU spring 2025/Gateway_Data_Science/UCI-student-performance/data/student-por.csv", sep=';')
-print(math_df.shape)
-print(por_df.shape)
+mat = pd.read_csv("/Users/choijunyeol/Desktop/JHU spring 2025/Gateway_Data_Science/UCI-student-performance/data/student-mat.csv", sep=';')
+por = pd.read_csv("/Users/choijunyeol/Desktop/JHU spring 2025/Gateway_Data_Science/UCI-student-performance/data/student-por.csv", sep=';')
+print(mat.shape)
+print(por.shape)
 
 
 # %%
-id_columns = ['school', 'sex', 'age', 'address', 'famsize', 'Pstatus','Medu', 'Fedu', 'Mjob', 'Fjob', 'reason', 'nursery', 'internet']
-##
-math_df['student_id'] = math_df[id_columns].astype(str).agg('-'.join, axis=1)
-por_df['student_id'] = por_df[id_columns].astype(str).agg('-'.join, axis=1)
+### Horizontal Merging
 
-math_ids = set(math_df['student_id'])
-por_ids = set(por_df['student_id'])
+id_cols = ['school', 'sex', 'age', 'address', 'famsize', 'Pstatus','Medu', 'Fedu', 'Mjob', 'Fjob', 'reason', 'nursery', 'internet']
 
-both_ids = math_ids & por_ids
-only_math_ids = math_ids - por_ids
-only_por_ids = por_ids - math_ids
+h_both = pd.merge(mat, por, on=id_cols, suffixes=('_mat', '_por'), how='inner')
 
-only_math_df = math_df[math_df['student_id'].isin(only_math_ids)].copy()
-only_por_df = por_df[por_df['student_id'].isin(only_por_ids)].copy()
-math_both_df = math_df[math_df['student_id'].isin(both_ids)].copy()
-por_both_df = por_df[por_df['student_id'].isin(both_ids)].copy()
+grade_cols = ['G1_mat', 'G2_mat', 'G3_mat', 'G1_por', 'G2_por', 'G3_por']
+non_grade_cols = [col for col in h_both.columns if col not in grade_cols]
+h_both = h_both[non_grade_cols + grade_cols]
 
-math_both_df = math_both_df.sort_values('student_id').reset_index(drop=True)
-por_both_df = por_both_df.sort_values('student_id').reset_index(drop=True)
+mat_only = pd.merge(mat, h_both[id_cols], on=id_cols, how='left', indicator=True)
+h_mat_only = mat_only[mat_only['_merge'] == 'left_only'].drop(columns=['_merge'])
 
-#Averaging
-grades_math = math_both_df[['G1', 'G2', 'G3']]
-grades_por = por_both_df[['G1', 'G2', 'G3']]
-grades_avg = ((grades_math + grades_por) / 2).round()
+por_only = pd.merge(por, h_both[id_cols], on=id_cols, how='left', indicator=True)
+h_por_only = por_only[por_only['_merge'] == 'left_only'].drop(columns=['_merge'])
 
-both_df = math_both_df.copy()
-both_df[['G1', 'G2', 'G3']] = grades_avg
+print(h_mat_only.shape)
+print(h_por_only.shape)
+print(h_both.shape)
+print(h_both.head)
 
-only_math_df.drop(columns='student_id', inplace=True)
-only_por_df.drop(columns='student_id', inplace=True)
-both_df.drop(columns='student_id', inplace=True)
 
-only_math_df.to_csv("only_mat_final.csv", index=False)
-only_por_df.to_csv("only_por_final.csv", index=False)
-both_df.to_csv("both_final.csv", index=False)
 
-print("✔️ only_math_df:", only_math_df.shape)
-print("✔️ only_por_df:", only_por_df.shape)
-print("✔️ both_df (with averaged grades):", both_df.shape)
-
+# %% [markdown]
+# 
 
 # %%
-# import pandas as pd
-# import numpy as np
+#### Vertical Merge
 
-# id_cols = [
-#     'school', 'sex', 'age', 'address', 'famsize', 'Pstatus',
-#     'Medu', 'Fedu', 'Mjob', 'Fjob', 'reason', 'nursery', 'internet'
-# ]
+import numpy as np
+id_cols = ['school', 'sex', 'age', 'address', 'famsize', 'Pstatus','Medu', 'Fedu', 'Mjob', 'Fjob', 'reason', 'nursery', 'internet']
 
-# merged = pd.merge(mat, por,on=id_cols, how='outer', suffixes=('_mat', '_por'), indicator=True)
+merged = pd.merge(mat, por, on=id_cols, suffixes=('_mat', '_por'), how='outer', indicator=True)
 
-# only_mat = merged[merged['_merge'] == 'left_only'].drop(columns=['_merge'])
-# only_por = merged[merged['_merge'] == 'right_only'].drop(columns=['_merge'])
-# both     = merged[merged['_merge'] == 'both'].drop(columns=['_merge'])
+both_mask = merged['_merge'] == 'both'
 
-# print(f"only in mat: {len(only_mat)}")
-# print(f"only in por: {len(only_por)}")
-# print(f"in both:     {len(both)}")
+both_mat_rows = merged[both_mask].copy()
+both_por_rows = merged[both_mask].copy()
 
-# both_clean = both[id_cols].copy()
+mat_cols = id_cols + [col for col in mat.columns if col not in id_cols]
+por_cols = id_cols + [col for col in por.columns if col not in id_cols]
 
-# shared_cols = [col for col in mat.columns if col in por.columns and col not in id_cols]
+both_mat_rows = both_mat_rows[[col if col in id_cols else f"{col}_mat" for col in mat.columns]]
+both_mat_rows.columns = mat.columns
 
-# for col in shared_cols:
-#     col_mat = col + '_mat'
-#     col_por = col + '_por'
+both_por_rows = both_por_rows[[col if col in id_cols else f"{col}_por" for col in por.columns]]
+both_por_rows.columns = por.columns
 
-#     if col_mat in both.columns and col_por in both.columns:
-#         if np.issubdtype(both[col_mat].dtype, np.number):
-#             both_clean[col] = round((both[col_mat] + both[col_por]) / 2)
-#         else:
-#             both_clean[col] = both[col_mat]  
-#     else:
-#         raise IndexError
+v_both = pd.concat([both_mat_rows, both_por_rows], ignore_index=True)
 
-# only_mat_cols = [col + '_mat' for col in mat.columns if col not in id_cols]
-# only_mat_clean = only_mat[id_cols + only_mat_cols].copy()
+mat_only = mat.merge(v_both, on=mat.columns.tolist(), how='outer', indicator=True)
+v_mat_only = mat_only.query('_merge == "left_only"').drop(columns=['_merge'])
 
-# only_mat_clean.columns = id_cols + [col.replace('_mat', '') for col in only_mat_cols]
+por_only = por.merge(v_both, on=por.columns.tolist(), how='outer', indicator=True)
+v_por_only = por_only.query('_merge == "left_only"').drop(columns=['_merge'])
 
-
-
-# only_por_cols = [col + '_por' for col in por.columns if col not in id_cols]
-# only_por_clean = only_por[id_cols + only_por_cols].copy()
-# only_por_clean.columns = id_cols + [col.replace('_por', '') for col in only_por_cols]
-
-
-# # Final shapes
-# print("only_mat_clean:", only_mat_clean.shape)
-# print("only_por_clean:", only_por_clean.shape)
-# print("both_clean:", both_clean.shape)
-
+print(v_mat_only.shape)
+print(v_por_only.shape)
+print(v_both.shape)
+print(v_both.head)
 
 # %%
 import numpy as np
 from sklearn.preprocessing import RobustScaler, OrdinalEncoder
 
 target_cols = ['G1', 'G2', 'G3']
+h_both_target = ['G1_mat', 'G2_mat', 'G3_mat', 'G1_por', 'G2_por', 'G3_por']
 
 def preprocess_features(df):
-    features = df.drop(columns=target_cols)
-    targets = df[target_cols]
+    if df.shape[1]==53:
+        features = df.drop(columns=h_both_target)
+        targets = df[h_both_target]
+    else:
+        features = df.drop(columns=target_cols)
+        targets = df[target_cols]
 
     cat_cols = features.select_dtypes(include='object').columns
     num_cols = features.select_dtypes(include='number').columns
@@ -131,27 +103,20 @@ def preprocess_features(df):
 
     return pd.concat([features, targets], axis=1)
 
-only_mat_processed = preprocess_features(only_math_df.copy())
-only_por_processed = preprocess_features(only_por_df.copy())
-both_processed = preprocess_features(both_df.copy())
+h_only_mat_processed = preprocess_features(h_por_only.copy())
+h_only_por_processed = preprocess_features(h_mat_only.copy())
+h_both_processed = preprocess_features(h_both.copy())
 
+v_only_mat_processed = preprocess_features(v_por_only.copy())
+v_only_por_processed = preprocess_features(v_mat_only.copy())
+v_both_processed = preprocess_features(v_both.copy())
 
-print(both_processed.head)
+h_only_mat_processed.to_csv("h_only_mat_processed.csv", index=False)
+h_only_por_processed.to_csv("h_only_por_processed.csv", index=False)
+h_both_processed.to_csv("h_both_processed.csv", index=False)
 
-
-# %%
-import matplotlib.pyplot as plt
-import seaborn as sns
-mat_features = only_mat_processed.drop(columns=['G1', 'G2', 'G3'])
-mat_targets = only_mat_processed[['G1', 'G2', 'G3']]
-
-mat_full = pd.concat([mat_features, mat_targets], axis=1)
-
-# Plot heatmap of correlation for mat dataset
-plt.figure(figsize=(10, 8))
-sns.heatmap(mat_full.corr()[mat_targets.columns].sort_values(by='G3', ascending=False),
-            annot=True, cmap='coolwarm', fmt=".2f")
-plt.title("Correlation of Features with Grades (mat)")
-plt.show()
+v_only_mat_processed.to_csv("v_only_mat_processed.csv", index=False)
+v_only_por_processed.to_csv("v_only_por_processed.csv", index=False)
+v_both_processed.to_csv("v_both_processed.csv", index=False)
 
 
