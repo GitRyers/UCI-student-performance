@@ -128,8 +128,8 @@ for dataset, df in datasets.items():
         X_train_scaled = scaler.fit_transform(X_train)
         X_test_scaled = scaler.transform(X_test)
 
-        mlp = MLPRegressor(hidden_layer_sizes=(64, 32), activation='relu', solver='adam',
-                           max_iter=1000, random_state=42)
+        mlp = MLPRegressor(hidden_layer_sizes=50, activation='tanh', solver='adam', alpha=0.0001, learning_rate_init=0.001,
+                           max_iter=200, random_state=42)
         mlp.fit(X_train_scaled, y_train)
         y_pred = mlp.predict(X_test_scaled)
     
